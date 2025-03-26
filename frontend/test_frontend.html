@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Misconception Detector - Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .header {
+            background-color: #4a6fa5;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .test-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background-color: #4a6fa5;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .test-button:hover {
+            background-color: #3a5a8a;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            white-space: pre-wrap;
+        }
+        .image-preview {
+            max-width: 100%;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Math Misconception Detector - Test Page</h1>
+            <p>Test the exercise generation and image creation functionality</p>
+        </div>
+
+        <div class="test-section">
+            <h2>Test Exercise Generation</h2>
+            <div>
+                <label for="misconception-id">Misconception ID:</label>
+                <input type="text" id="misconception-id" value="MaE03" placeholder="e.g., MaE03">
+            </div>
+            <div style="margin-top: 10px;">
+                <label for="misconception-description">Description:</label>
+                <input type="text" id="misconception-description" value="Confusion with negative numbers in equations" placeholder="e.g., Confusion with negative numbers in equations" style="width: 300px;">
+            </div>
+            <button id="generate-exercise-btn" class="test-button" style="margin-top: 15px;">Generate Exercise</button>
+            
+            <div id="exercise-result" class="result" style="display: none;">
+                <h3>Exercise:</h3>
+                <div id="exercise-text"></div>
+                
+                <h3>Solution:</h3>
+                <div id="solution-text"></div>
+                
+                <h3>Generated Image:</h3>
+                <img id="exercise-image" class="image-preview">
+                <button id="download-image-btn" class="test-button" style="margin-top: 10px; display: none;">Download Image</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const generateExerciseBtn = document.getElementById('generate-exercise-btn');
+            const exerciseResult = document.getElementById('exercise-result');
+            const exerciseText = document.getElementById('exercise-text');
+            const solutionText = document.getElementById('solution-text');
+            const exerciseImage = document.getElementById('exercise-image');
+            const downloadImageBtn = document.getElementById('download-image-btn');
+            
+            generateExerciseBtn.addEventListener('click', async function() {
+                const misconceptionId = document.getElementById('misconception-id').value;
+                const description = document.getElementById('misconception-description').value;
+                
+                if (!misconceptionId || !description) {
+                    alert('Please enter both Misconception ID and Description');
+                    return;
+                }
+                
+                generateExerciseBtn.disabled = true;
+                generateExerciseBtn.textContent = 'Generating...';
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('misconception_id', misconceptionId);
+                    formData.append('description', description);
+                    
+                    const response = await fetch('http://localhost:8000/api/generate-exercise', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    exerciseText.textContent = result.exercise_text || 'No exercise text provided';
+                    solutionText.textContent = result.solution || 'No solution provided';
+                    
+                    if (result.image_data) {
+                        exerciseImage.src = result.image_data;
+                        downloadImageBtn.style.display = 'block';
+                        
+                        downloadImageBtn.addEventListener('click', function() {
+                            const link = document.createElement('a');
+                            link.href = result.image_data;
+                            link.download = `math-exercise-${Date.now()}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        });
+                    } else {
+                        exerciseImage.src = '';
+                        downloadImageBtn.style.display = 'none';
+                    }
+                    
+                    exerciseResult.style.display = 'block';
+                    
+                } catch (error) {
+                    console.error('Error generating exercise:', error);
+                    alert(`Error generating exercise: ${error.message}`);
+                } finally {
+                    generateExerciseBtn.disabled = false;
+                    generateExerciseBtn.textContent = 'Generate Exercise';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

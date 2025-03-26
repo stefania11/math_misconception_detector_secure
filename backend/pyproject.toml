@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "math-misconception-api"
+version = "0.1.0"
+description = "API for detecting math misconceptions using Gemini 2.5 Pro"
+authors = ["Devin AI <devin-ai-integration[bot]@users.noreply.github.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = {version = "^0.115.0", extras = ["standard"]}
+uvicorn = "^0.34.0"
+python-multipart = "^0.0.20"
+python-dotenv = "^1.0.0"
+google-generativeai = "^0.4.0"
+pillow = "^10.2.0"
+pydantic = "^2.6.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.4.0"
+
+[tool.poetry.scripts]
+start = "uvicorn app.main:app --host 0.0.0.0 --port 8000"
+dev = "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
