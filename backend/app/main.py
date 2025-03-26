@@ -37,7 +37,9 @@ app.add_middleware(
         "http://localhost:8000",
         "http://localhost:8080",
         "https://math-misconception-app.netlify.app",
-        "https://math-misconception-app-n3mniwte.devinapps.com"
+        "https://math-misconception-app-n3mniwte.devinapps.com",
+        "https://math-misconception-app-tjar7k5y.devinapps.com",
+        "https://math-misconception-api-odyspgkn.fly.dev"
     ],
     allow_credentials=True,
     allow_methods=["*"],

@@ -13,7 +13,7 @@ const exerciseSection = document.getElementById('exercise-section');
 const showSolutionBtn = document.getElementById('show-solution-btn');
 const solutionContent = document.getElementById('solution-content');
 
-const API_URL = "https://math-misconception-api-secure.fly.dev";
+const API_URL = "https://math-misconception-api-odyspgkn.fly.dev";
 const ANALYZE_ENDPOINT = `${API_URL}/api/analyze`;
 const EXERCISE_ENDPOINT = `${API_URL}/api/generate-exercise`;
 
