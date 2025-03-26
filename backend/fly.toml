@@ -1,4 +1,4 @@
-app = "math-misconception-api-secure"
+app = "math-misconception-api-odyspgkn"
 primary_region = "iad"
 
 [build]
@@ -6,6 +6,7 @@ primary_region = "iad"
 
 [env]
   PORT = "8080"
+  GEMINI_API_KEY = "${GEMINI_API}"
 
 [http_service]
   internal_port = 8080
