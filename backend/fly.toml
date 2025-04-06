@@ -6,15 +6,22 @@ primary_region = "iad"
 
 [env]
   PORT = "8080"
-  GEMINI_API_KEY = "${GEMINI_API}"
+  # API keys should be set as secrets, not in this file
+  # See: https://fly.io/docs/reference/secrets/
 
 [http_service]
   internal_port = 8080
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
   processes = ["app"]
+
+[[http_service.cors_origins]]
+  origin = "https://math-misconception-app-tjar7k5y.devinapps.com"
+  methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  headers = ["Content-Type", "Authorization"]
+  credentials = true
 
 [mounts]
   source = "math_misconception_data"

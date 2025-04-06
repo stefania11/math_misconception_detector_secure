@@ -205,28 +205,62 @@ async function analyzeImage() {
     
     console.log('Sending request to API with image data');
     
-    const response = await fetch(ANALYZE_ENDPOINT, {
-      method: 'POST',
-      body: formData,
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      throw new Error(`Error analyzing image: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    
-    if (processingIndicator) {
-      processingIndicator.style.display = 'none';
-    }
-    
-    displayMisconception(result);
-    
-    if (result && result.id) {
-      generateExercise(result.id, result.description);
+    try {
+      const response = await fetch(ANALYZE_ENDPOINT, {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API error (${response.status}):`, errorText);
+        
+        if (response.status === 403) {
+          throw new Error('Access denied. CORS or authentication issue detected.');
+        } else if (response.status === 500) {
+          throw new Error(`Server error: ${errorText || 'The server encountered an error processing the image'}`);
+        } else if (response.status === 400) {
+          throw new Error(`Invalid request: ${errorText || 'Please check your image and try again'}`);
+        } else {
+          throw new Error(`Error analyzing image: ${response.status} - ${errorText || 'Unknown error'}`);
+        }
+      }
+      
+      const result = await response.json();
+      
+      if (processingIndicator) {
+        processingIndicator.style.display = 'none';
+      }
+      
+      if (result && result.error) {
+        throw new Error(`Analysis error: ${result.error}`);
+      }
+      
+      displayMisconception(result);
+      
+      if (result && result.id) {
+        generateExercise(result.id, result.description);
+      } else {
+        console.warn('No misconception detected or invalid response format:', result);
+        alert('No misconception could be detected in this image. Please try another image.');
+        resetCamera();
+      }
+    } catch (fetchError) {
+      if (fetchError.name === 'AbortError') {
+        throw new Error('Request timed out. Please check your internet connection and try again.');
+      } else if (fetchError.message.includes('Failed to fetch')) {
+        throw new Error('Network error. Please check your internet connection or the API server may be down.');
+      } else {
+        throw fetchError;
+      }
     }
     
   } catch (error) {
@@ -235,6 +269,22 @@ async function analyzeImage() {
     if (processingIndicator) {
       processingIndicator.style.display = 'none';
     }
+    
+    const errorMessage = document.createElement('div');
+    errorMessage.className = 'error-message';
+    errorMessage.innerHTML = `
+      <h3>Error Analyzing Image</h3>
+      <p>${error.message}</p>
+      <p>Please try again or use a different image.</p>
+    `;
+    
+    const existingError = document.querySelector('.error-message');
+    if (existingError) {
+      existingError.remove();
+    }
+    
+    const mainContent = document.querySelector('main') || document.body;
+    mainContent.appendChild(errorMessage);
     
     alert(`Error analyzing image: ${error.message}`);
     
@@ -281,24 +331,81 @@ async function generateExercise(misconceptionId, description) {
     formData.append('misconception_id', misconceptionId);
     formData.append('description', description);
     
-    const response = await fetch(EXERCISE_ENDPOINT, {
-      method: 'POST',
-      body: formData
-    });
+    console.log('Generating exercise for misconception:', misconceptionId);
     
-    if (!response.ok) {
-      throw new Error(`Error generating exercise: ${response.status}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+    
+    try {
+      const response = await fetch(EXERCISE_ENDPOINT, {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API error (${response.status}):`, errorText);
+        
+        if (response.status === 403) {
+          throw new Error('Access denied. CORS or authentication issue detected.');
+        } else if (response.status === 500) {
+          throw new Error(`Server error: ${errorText || 'The server encountered an error generating the exercise'}`);
+        } else if (response.status === 400) {
+          throw new Error(`Invalid request: ${errorText || 'Please try again with different parameters'}`);
+        } else {
+          throw new Error(`Error generating exercise: ${response.status} - ${errorText || 'Unknown error'}`);
+        }
+      }
+      
+      const result = await response.json();
+      
+      if (result && result.error) {
+        throw new Error(`Exercise generation error: ${result.error}`);
+      }
+      
+      displayExercise(result);
+      
+    } catch (fetchError) {
+      if (fetchError.name === 'AbortError') {
+        throw new Error('Request timed out. Please check your internet connection and try again.');
+      } else if (fetchError.message.includes('Failed to fetch')) {
+        throw new Error('Network error. Please check your internet connection or the API server may be down.');
+      } else {
+        throw fetchError;
+      }
     }
-    
-    const result = await response.json();
-    
-    displayExercise(result);
     
   } catch (error) {
     console.error('Error generating exercise:', error);
     
     if (exerciseSection) {
       exerciseSection.style.display = 'none';
+    }
+    
+    const fallbackMessage = document.createElement('div');
+    fallbackMessage.className = 'fallback-message';
+    fallbackMessage.innerHTML = `
+      <h3>Exercise Generation Failed</h3>
+      <p>${error.message}</p>
+      <p>We couldn't generate a practice exercise at this time.</p>
+    `;
+    
+    const existingFallback = document.querySelector('.fallback-message');
+    if (existingFallback) {
+      existingFallback.remove();
+    }
+    
+    const resultSectionElement = document.getElementById('result-section');
+    if (resultSectionElement) {
+      resultSectionElement.appendChild(fallbackMessage);
     }
   }
 }
